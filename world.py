@@ -7,14 +7,15 @@ rides = []
 
 
 class World:
-
-    step = 0
+    def __init__(self, problem: Problem) -> None:
+        self.step = 0
+        self.problem = 0
+        self.cars = [Car() for _ in range(problem.num_cars)]
 
     def next_step(self):
-
         self.step += 1
 
-        for car in cars:
+        for car in self.cars:
             car.next()
 
 
