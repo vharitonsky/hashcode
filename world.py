@@ -23,6 +23,10 @@ class World:
     def next_step(self):
         # self.render()
         self.step += 1
+        self.rides = list(filter(
+            lambda r: self.step + r.distance <= r.time_end,
+            self.rides
+        ))
 
         for car in self.cars:
             car.next()
