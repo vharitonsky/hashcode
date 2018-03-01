@@ -15,6 +15,7 @@ class World:
         self.rides = problem.rides
 
     def run(self):
+        self.rides = [ride for ride in self.rides if ride.time_end > self.step]
         while self.step < self.problem.number_of_steps:
             self.next_step()
 
@@ -26,11 +27,13 @@ class World:
 
 
 class Car:
-    assigned_ride = None
-    current_score = 0
 
-    row = 0
-    column = 0
+    def __init__(self):
+        self.assigned_ride = None
+        self.current_score = 0
+        self.row = 0
+        self.column = 0
+        self.ride_history = []
 
     def next(self):
         global total_score
@@ -43,6 +46,7 @@ class Car:
         ):
             if world.step < self.assigned_ride.time_end:
                 total_score += self.current_score
+            self.ride_history.append(self.assigned_ride.index)
             self.assigned_ride = None
             self.current_score = 0
 
@@ -76,10 +80,19 @@ class Car:
             world.step >= self.assigned_ride.time_start
         ):
             self.assigned_ride.started = True
+            if self.assigned_ride.time_start == world.step:
+                self.current_score = world.problem.in_time_start_bonus
 
 
 if __name__ == '__main__':
     init_file = sys.argv[1]
+    out_file = sys.argv[2]
     world = World(read(init_file))
     world.run()
     print(total_score)
+    with open(out_file, 'w') as out:
+        for car in world.cars:
+            out.write(str(len(car.ride_history)))
+            out.write(' ')
+            out.write(' '.join(map(str, car.ride_history)))
+            out.write('\n')
