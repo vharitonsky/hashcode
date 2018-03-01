@@ -1,6 +1,6 @@
 import sys
 import random
-from scheduler import Ride, Problem, read
+from scheduler import Ride, Problem, read, distance, Point
 
 cars = []
 
@@ -21,7 +21,7 @@ class World:
             self.next_step()
 
     def next_step(self):
-        self.render()
+        # self.render()
         self.step += 1
 
         for car in self.cars:
@@ -71,9 +71,22 @@ class Car:
             self.move()
         else:
             if world.rides:
-                self.assigned_ride = random.choice(world.rides)
+                self.assigned_ride = self.choose(world.rides)
                 world.rides.remove(self.assigned_ride)
                 self.move()
+
+    def choose(self, rides):
+        coord = Point(self.row, self.column)
+        def metric(ride):
+            return distance(coord, ride.start)
+        best_ride, best_metric = rides[0], metric(rides[0])
+
+        for ride in rides[1:]:
+            ride_metric = metric(ride)
+            if ride_metric < best_metric:
+                best_ride, best_metric = ride, ride_metric
+
+        return best_ride
 
     def move(self):
         if self.assigned_ride.started:
