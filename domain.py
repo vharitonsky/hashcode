@@ -1,19 +1,64 @@
-import sys
-import random
-from scheduler import Ride, Problem, read, distance, Point
+from typing import List
+from collections import namedtuple
 
-cars = []
 
-total_score = 0
+Point = namedtuple('Point', ('row', 'column'))
+Size = namedtuple('Size', ('rows', 'columns'))
 
-alphabet = 'abcdefghijklmnopqrstuvwxyz'
 
-class World:
+def distance(start: Point, end: Point) -> int:
+    return abs(start.row - end.row) + abs(start.column - end.column)
+
+
+class Ride(object):
+    def __init__(self, 
+        start: Point, finish: Point,
+        time_start: int, time_end: int, index:int
+    ) -> None:
+        self.started = False
+        self.start = start
+        self.finish = finish
+        self.time_start = time_start
+        self.time_end = time_end
+        self.index = index
+
+        self.duration = self.time_end - self.time_start
+        self.distance = distance(start, finish)
+
+    @property
+    def length(self):
+        """Backward compatibility"""
+        return self.distance
+
+
+class Problem(object):
+    def __init__(self,
+        num_rides: int, num_cars: int,
+        size: Size, rides: List[Ride],
+        in_time_start_bonus: int,
+        num_steps: int,
+    ) -> None:
+        self.num_rides = num_rides
+        self.num_cars = num_cars
+        self.size = size
+        self.rides = rides
+        self.in_time_start_bonus = in_time_start_bonus
+        self.num_steps = num_steps
+
+    @property
+    def number_of_steps(self):
+        """Backward compatibility"""
+        return self.num_steps
+
+
+class World(object):
     def __init__(self, problem: Problem) -> None:
         self.step = 0
         self.problem = problem
         self.cars = [Car() for _ in range(problem.num_cars)]
         self.rides = problem.rides
+
+        self.total_score = 0
 
     def run(self):
         self.rides = [ride for ride in self.rides if ride.time_end > self.step]
@@ -23,14 +68,14 @@ class World:
     def next_step(self):
         # self.render()
         self.step += 1
-        print(f'{self.step} / {self.problem.num_steps}')
+        print(f'{self.step} / {self.problem.num_steps}', end='\r')
         self.rides = list(filter(
             lambda r: self.step + r.distance <= r.time_end,
             self.rides
         ))
 
         for car in self.cars:
-            car.next()
+            car.next(self)
 
     def render(self):
         matrix = [['%'] * self.problem.size.rows
@@ -48,8 +93,7 @@ class World:
             print()
 
 
-class Car:
-
+class Car(object):
     def __init__(self):
         self.assigned_ride = None
         self.current_score = 0
@@ -57,9 +101,7 @@ class Car:
         self.column = 0
         self.ride_history = []
 
-    def next(self):
-        global total_score
-        global world
+    def next(self, world):
         if (
             self.assigned_ride and
             self.assigned_ride.started and
@@ -67,19 +109,19 @@ class Car:
             self.column == self.assigned_ride.finish.column
         ):
             if world.step < self.assigned_ride.time_end:
-                total_score += self.current_score
+                world.total_score += self.current_score
             self.ride_history.append(self.assigned_ride.index)
             self.assigned_ride = None
             self.current_score = 0
 
         if self.assigned_ride:
-            self.move()
+            self.move(world)
         else:
             if world.rides:
                 self.assigned_ride = self.choose(world)
                 if self.assigned_ride:
                     world.rides.remove(self.assigned_ride)
-                    self.move()
+                    self.move(world)
 
     def choose(self, world):
         rides = world.rides
@@ -100,14 +142,14 @@ class Car:
 
         best_ride, best_metric = None, float('-Inf')
 
-        for ride in rides[1:]:
+        for ride in rides:
             ride_metric = metric(ride)
             if ride_metric > best_metric:
                 best_ride, best_metric = ride, ride_metric
 
         return best_ride
 
-    def move(self):
+    def move(self, world):
         if self.assigned_ride.started:
             to = self.assigned_ride.finish
         else:
@@ -131,17 +173,3 @@ class Car:
             self.assigned_ride.started = True
             if self.assigned_ride.time_start == world.step:
                 self.current_score = world.problem.in_time_start_bonus
-
-
-if __name__ == '__main__':
-    init_file = sys.argv[1]
-    out_file = sys.argv[2]
-    world = World(read(init_file))
-    world.run()
-    print(total_score)
-    with open(out_file, 'w') as out:
-        for car in world.cars:
-            out.write(str(len(car.ride_history)))
-            out.write(' ')
-            out.write(' '.join(map(str, car.ride_history)))
-            out.write('\n')
