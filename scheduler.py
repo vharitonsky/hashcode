@@ -19,10 +19,12 @@ class Ride(object):
         self.index = index
 
         self.duration = self.time_end - self.time_start
-        self.length = (
-            abs(start.row - finish.row)
-            + abs(start.column - finish.column)
-        )
+        self.distance = distance(start, finish)
+
+    @property
+    def length(self):
+        """Backward compatibility"""
+        return self.distance
 
 
 class Problem(object):
@@ -42,6 +44,10 @@ class Problem(object):
     @property
     def number_of_steps(self):
         return self.num_steps
+
+
+def distance(start: Point, end: Point) -> int:
+    return abs(start.row - end.row) + abs(start.column - end.column)
 
 
 def read(filename: str) -> Problem:

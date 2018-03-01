@@ -6,6 +6,7 @@ cars = []
 
 total_score = 0
 
+alphabet = 'abcdefghijklmnopqrstuvwxyz'
 
 class World:
     def __init__(self, problem: Problem) -> None:
@@ -20,10 +21,26 @@ class World:
             self.next_step()
 
     def next_step(self):
+        self.render()
         self.step += 1
 
         for car in self.cars:
             car.next()
+
+    def render(self):
+        matrix = [['%'] * self.problem.size.rows
+                  for _ in range(self.problem.size.columns)]
+        for i, car in enumerate(self.cars):
+            matrix[car.column][car.row] = i
+            if car.assigned_ride:
+                finish = car.assigned_ride.finish
+                matrix[finish.column][finish.row] = alphabet[i]
+
+        print('-' * 80)
+        for column in matrix:
+            for el in column:
+                print(el, end=' ')
+            print()
 
 
 class Car:
