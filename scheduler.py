@@ -28,12 +28,18 @@ class Problem(object):
         num_rides: int, num_cars: int,
         size: Size, rides: List[Ride],
         in_time_start_bonus: int,
+        num_steps: int,
     ) -> None:
         self.num_rides = num_rides
         self.num_cars = num_cars
         self.size = size
         self.rides = rides
         self.in_time_start_bonus = in_time_start_bonus
+        self.num_steps = num_steps
+
+    @property
+    def number_of_steps(self):
+        return self.num_steps
 
 
 def read(filename: str) -> Problem:
@@ -64,4 +70,5 @@ def read(filename: str) -> Problem:
         size=Size(rows=total_rows, columns=total_columns),
         rides=rides,
         in_time_start_bonus=in_time_start_bonus,
+        num_steps=steps,
     )
