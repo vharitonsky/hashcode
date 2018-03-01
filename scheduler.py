@@ -9,12 +9,14 @@ Size = namedtuple('Size', ('rows', 'columns'))
 class Ride(object):
     def __init__(self, 
         start: Point, finish: Point,
-        time_start: int, time_end: int
+        time_start: int, time_end: int, index:int
     ) -> None:
+        self.started = False
         self.start = start
         self.finish = finish
         self.time_start = time_start
         self.time_end = time_end
+        self.index = index
 
         self.duration = self.time_end - self.time_start
         self.length = (
@@ -52,7 +54,7 @@ def read(filename: str) -> Problem:
 
         rides = []
 
-        for _ in range(num_rides):
+        for i in range(num_rides):
             (
                 start_row, start_column,
                 end_row, end_column,
@@ -62,6 +64,7 @@ def read(filename: str) -> Problem:
                 start=Point(start_row, start_column),
                 finish=Point(end_row, end_column),
                 time_start=earliest_start, time_end=latest_finish,
+                index=i
             ))
 
     return Problem(
