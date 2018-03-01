@@ -1,5 +1,7 @@
-from typing import List
+from typing import List, Optional
 from collections import namedtuple
+
+ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
 
 
 Point = namedtuple('Point', ('row', 'column'))
@@ -11,9 +13,10 @@ def distance(start: Point, end: Point) -> int:
 
 
 class Ride(object):
-    def __init__(self, 
+    def __init__(
+        self,
         start: Point, finish: Point,
-        time_start: int, time_end: int, index:int
+        time_start: int, time_end: int, index: int
     ) -> None:
         self.started = False
         self.start = start
@@ -26,13 +29,14 @@ class Ride(object):
         self.distance = distance(start, finish)
 
     @property
-    def length(self):
+    def length(self) -> int:
         """Backward compatibility"""
         return self.distance
 
 
 class Problem(object):
-    def __init__(self,
+    def __init__(
+        self,
         num_rides: int, num_cars: int,
         size: Size, rides: List[Ride],
         in_time_start_bonus: int,
@@ -46,7 +50,7 @@ class Problem(object):
         self.num_steps = num_steps
 
     @property
-    def number_of_steps(self):
+    def number_of_steps(self) -> int:
         """Backward compatibility"""
         return self.num_steps
 
@@ -60,12 +64,12 @@ class World(object):
 
         self.total_score = 0
 
-    def run(self):
+    def run(self) -> None:
         self.rides = [ride for ride in self.rides if ride.time_end > self.step]
         while self.step < self.problem.number_of_steps:
             self.next_step()
 
-    def next_step(self):
+    def next_step(self) -> None:
         # self.render()
         self.step += 1
         print(f'{self.step} / {self.problem.num_steps}', end='\r')
@@ -84,7 +88,7 @@ class World(object):
             matrix[car.column][car.row] = i
             if car.assigned_ride:
                 finish = car.assigned_ride.finish
-                matrix[finish.column][finish.row] = alphabet[i]
+                matrix[finish.column][finish.row] = ALPHABET[i]
 
         print('-' * 80)
         for column in matrix:
@@ -95,18 +99,21 @@ class World(object):
 
 class Car(object):
     def __init__(self):
-        self.assigned_ride = None
-        self.current_score = 0
-        self.row = 0
-        self.column = 0
-        self.ride_history = []
+        self.assigned_ride: Optional[Ride] = None
+        self.current_score: int = 0
+        self.row: int = 0
+        self.column: int = 0
+        self.ride_history: List[Ride] = []
+
+    @property
+    def coordinates(self) -> Point:
+        return Point(self.row, self.column)
 
     def next(self, world):
         if (
             self.assigned_ride and
             self.assigned_ride.started and
-            self.row == self.assigned_ride.finish.row and
-            self.column == self.assigned_ride.finish.column
+            self.coordinates == self.assigned_ride.finish
         ):
             if world.step < self.assigned_ride.time_end:
                 world.total_score += self.current_score
@@ -123,12 +130,12 @@ class Car(object):
                     world.rides.remove(self.assigned_ride)
                     self.move(world)
 
-    def choose(self, world):
+    def choose(self, world: World) -> Optional[Ride]:
         rides = world.rides
-        coord = Point(self.row, self.column)
+        coords = self.coordinates
 
-        def metric(ride):
-            distance_to_ride = distance(coord, ride.start)
+        def metric(ride: Ride) -> float:
+            distance_to_ride = distance(coords, ride.start)
             total_time = distance_to_ride + ride.distance
             if world.step + distance_to_ride < ride.time_start:
                 total_time += ride.time_start - (world.step + distance_to_ride)
@@ -149,7 +156,7 @@ class Car(object):
 
         return best_ride
 
-    def move(self, world):
+    def move(self, world: World) -> None:
         if self.assigned_ride.started:
             to = self.assigned_ride.finish
         else:
@@ -166,9 +173,8 @@ class Car(object):
         if self.assigned_ride.started:
             self.current_score += 1
         if (
-            self.row == self.assigned_ride.start.row and
-            self.column == self.assigned_ride.start.column and
-            world.step >= self.assigned_ride.time_start
+            self.coordinates == self.assigned_ride.start
+            and world.step >= self.assigned_ride.time_start
         ):
             self.assigned_ride.started = True
             if self.assigned_ride.time_start == world.step:
