@@ -23,6 +23,7 @@ class World:
     def next_step(self):
         # self.render()
         self.step += 1
+        print(f'{self.step} / {self.problem.num_steps}')
         self.rides = list(filter(
             lambda r: self.step + r.distance <= r.time_end,
             self.rides
@@ -75,19 +76,33 @@ class Car:
             self.move()
         else:
             if world.rides:
-                self.assigned_ride = self.choose(world.rides)
-                world.rides.remove(self.assigned_ride)
-                self.move()
+                self.assigned_ride = self.choose(world)
+                if self.assigned_ride:
+                    world.rides.remove(self.assigned_ride)
+                    self.move()
 
-    def choose(self, rides):
+    def choose(self, world):
+        rides = world.rides
         coord = Point(self.row, self.column)
+
         def metric(ride):
-            return distance(coord, ride.start)
-        best_ride, best_metric = rides[0], metric(rides[0])
+            distance_to_ride = distance(coord, ride.start)
+            total_time = distance_to_ride + ride.distance
+            if world.step + distance_to_ride < ride.time_start:
+                total_time += ride.time_start - (world.step + distance_to_ride)
+
+            win = ride.distance
+            if total_time + world.step > ride.time_end:
+                win -= ride.distance
+            if world.step + distance_to_ride <= ride.time_start:
+                win += world.problem.in_time_start_bonus
+            return win / total_time
+
+        best_ride, best_metric = None, float('-Inf')
 
         for ride in rides[1:]:
             ride_metric = metric(ride)
-            if ride_metric < best_metric:
+            if ride_metric > best_metric:
                 best_ride, best_metric = ride, ride_metric
 
         return best_ride
